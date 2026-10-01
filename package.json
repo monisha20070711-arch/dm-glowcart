@@ -1,0 +1,13 @@
+{
+  "name": "dm-glowcart-fullstack",
+  "version": "1.0.0",
+  "description": "DM-GLOWCART Beauty & Lifestyle E-Commerce Website",
+  "main": "backend/server.js",
+  "scripts": {
+    "install-all": "cd backend && npm install && cd ../frontend && npm install",
+    "build": "cd backend && npm install && cd ../frontend && npm install && npm run build",
+    "seed": "cd backend && node seed.js",
+    "start": "cd backend && node server.js",
+    "dev": "cd backend && npm run dev"
+  }
+}

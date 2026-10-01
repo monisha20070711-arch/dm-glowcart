@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: dm-glowcart
+    env: node
+    plan: free
+    buildCommand: npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        value: mongodb+srv://Monisha:monisha123@cluster0.nfpi4z1.mongodb.net/dm-glowcart?retryWrites=true&w=majority
+      - key: JWT_SECRET
+        value: glowcart_secret_key_2026_monisha_bsc_it
+      - key: RAZORPAY_KEY_ID
+        value: rzp_test_TdqLwEF2Z37v5Z
+      - key: RAZORPAY_KEY_SECRET
+        value: r27RFO6RMpR8tZm4uQB9KJbD

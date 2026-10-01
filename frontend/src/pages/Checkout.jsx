@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { ShieldCheck, MapPin, Plus, CheckCircle2, CreditCard, Lock, ArrowRight, AlertCircle } from 'lucide-react';
+import { ShieldCheck, MapPin, Plus, CheckCircle2, CreditCard, Lock, ArrowRight, AlertCircle, QrCode, Copy, Check, Sparkles, Upload } from 'lucide-react';
 import API from '../services/api';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -22,6 +22,13 @@ const Checkout = () => {
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [processingPayment, setProcessingPayment] = useState(false);
+
+  // Payment Options & UPI QR State
+  const [paymentMethodType, setPaymentMethodType] = useState('UPI_QR'); // 'UPI_QR' or 'RAZORPAY'
+  const [upiId, setUpiId] = useState('monisha20070711@okicici');
+  const [customQrUrl, setCustomQrUrl] = useState('');
+  const [utrNumber, setUtrNumber] = useState('');
+  const [copiedUpi, setCopiedUpi] = useState(false);
 
   // New Address Form State
   const [fullName, setFullName] = useState(user ? user.name : '');
@@ -197,6 +204,51 @@ const Checkout = () => {
     }
   };
 
+  const handleCopyUpi = () => {
+    navigator.clipboard.writeText(upiId);
+    setCopiedUpi(true);
+    showToast('UPI ID copied to clipboard!', 'success');
+    setTimeout(() => setCopiedUpi(false), 2000);
+  };
+
+  const handleUpiPayment = async () => {
+    if (!selectedAddress) {
+      showToast('Please select or add a delivery address', 'error');
+      return;
+    }
+    if (!utrNumber || utrNumber.trim().length < 6) {
+      showToast('Please enter a valid 12-digit UTR/Reference Number from GPay/PhonePe', 'error');
+      return;
+    }
+
+    try {
+      setProcessingPayment(true);
+      const res = await API.post('/payment/create-upi-order', {
+        items,
+        couponCode: appliedCoupon ? appliedCoupon.code : '',
+        shippingAddress: selectedAddress,
+        utrNumber: utrNumber.trim(),
+        subtotal: cartSubtotal,
+        discount: discountAmount,
+        deliveryCharge,
+        grandTotal
+      });
+
+      if (res.data.success) {
+        clearCart();
+        showToast('UPI Payment submitted! Order confirmed.', 'success');
+        navigate('/order-success', { state: { order: res.data.data } });
+      } else {
+        showToast(res.data.message || 'Failed to submit UPI order', 'error');
+      }
+    } catch (err) {
+      console.error('UPI Submit Error:', err);
+      showToast(err.response?.data?.message || 'UPI Order submission failed', 'error');
+    } finally {
+      setProcessingPayment(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -293,22 +345,166 @@ const Checkout = () => {
 
         {/* Right Column: Payment & Order Totals */}
         <div className="lg:col-span-4 space-y-6">
-          <div className="bg-white rounded-2xl border border-rose-100 p-6 shadow-sm space-y-4">
+          <div className="bg-white rounded-2xl border border-rose-100 p-6 shadow-sm space-y-5">
             <h3 className="font-serif font-bold text-base text-slate-900 border-b border-slate-100 pb-3">
-              Payment Method
+              Choose Payment Method
             </h3>
 
-            <div className="bg-rose-50/70 p-4 rounded-xl border border-rose-200 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-glow-600 text-white flex items-center justify-center font-bold shrink-0">
-                <CreditCard className="w-5 h-5" />
-              </div>
-              <div>
-                <span className="block text-xs font-bold text-slate-900">Razorpay Test Gateway</span>
-                <span className="text-[11px] text-slate-500">Supports Cards, UPI, Netbanking</span>
-              </div>
+            {/* Payment Method Selector Tabs */}
+            <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setPaymentMethodType('UPI_QR')}
+                className={`py-2 px-3 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                  paymentMethodType === 'UPI_QR'
+                    ? 'bg-white text-glow-600 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <QrCode className="w-4 h-4 text-glow-600" />
+                <span>UPI QR Scanner</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPaymentMethodType('RAZORPAY')}
+                className={`py-2 px-3 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                  paymentMethodType === 'RAZORPAY'
+                    ? 'bg-white text-glow-600 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <CreditCard className="w-4 h-4 text-glow-600" />
+                <span>Razorpay Gateway</span>
+              </button>
             </div>
 
-            <div className="space-y-2.5 text-xs text-slate-600 pt-2 border-t border-slate-100">
+            {/* TAB 1: UPI QR SCANNER OPTION */}
+            {paymentMethodType === 'UPI_QR' && (
+              <div className="space-y-4 pt-1">
+                <div className="bg-gradient-to-br from-rose-50 to-rose-100/50 p-4 rounded-2xl border border-rose-200 text-center space-y-3">
+                  <div className="flex items-center justify-center gap-1 text-[11px] font-bold text-glow-700 uppercase tracking-wider">
+                    <Sparkles className="w-3.5 h-3.5" /> Scan & Pay via GPay / PhonePe / Paytm
+                  </div>
+
+                  {/* QR Image Display */}
+                  <div className="bg-white p-3 rounded-2xl inline-block border border-rose-200 shadow-sm relative group">
+                    <img
+                      src={
+                        customQrUrl ||
+                        `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(
+                          `upi://pay?pa=${upiId}&pn=DM-GLOWCART&am=${grandTotal}&cu=INR`
+                        )}`
+                      }
+                      alt="UPI Payment QR Code"
+                      className="w-44 h-44 object-contain mx-auto rounded-lg"
+                    />
+                    <div className="text-[10px] text-slate-500 mt-1 font-semibold">
+                      Scan with any UPI App • Pay ₹{grandTotal}
+                    </div>
+                  </div>
+
+                  {/* UPI ID & Copy button */}
+                  <div className="bg-white p-2.5 rounded-xl border border-rose-200 flex items-center justify-between text-xs font-mono">
+                    <span className="text-slate-700 font-bold truncate">{upiId}</span>
+                    <button
+                      type="button"
+                      onClick={handleCopyUpi}
+                      className="bg-rose-100 hover:bg-rose-200 text-glow-700 text-[11px] font-sans font-bold px-2.5 py-1 rounded-lg flex items-center gap-1 shrink-0"
+                    >
+                      {copiedUpi ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                      <span>{copiedUpi ? 'Copied' : 'Copy UPI'}</span>
+                    </button>
+                  </div>
+
+                  {/* Custom Scanner URL Toggle / Custom QR Option */}
+                  <details className="text-left">
+                    <summary className="text-[11px] text-slate-500 font-semibold cursor-pointer hover:text-glow-600">
+                      ⚙️ Change UPI ID or Image Link
+                    </summary>
+                    <div className="mt-2 space-y-2 pt-2 border-t border-rose-200 text-[11px]">
+                      <div>
+                        <label className="font-bold text-slate-700">UPI ID / VPA:</label>
+                        <input
+                          type="text"
+                          value={upiId}
+                          onChange={(e) => setUpiId(e.target.value)}
+                          className="w-full mt-0.5 p-1.5 bg-white border border-slate-300 rounded-lg text-xs"
+                          placeholder="yourname@okicici"
+                        />
+                      </div>
+                      <div>
+                        <label className="font-bold text-slate-700">Custom QR Image URL (Optional):</label>
+                        <input
+                          type="text"
+                          value={customQrUrl}
+                          onChange={(e) => setCustomQrUrl(e.target.value)}
+                          className="w-full mt-0.5 p-1.5 bg-white border border-slate-300 rounded-lg text-xs"
+                          placeholder="https://i.imgur.com/your-qr.png"
+                        />
+                      </div>
+                    </div>
+                  </details>
+                </div>
+
+                {/* UTR Input */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-800 block">
+                    Enter 12-Digit UTR / Ref No (After Payment): <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    maxLength={16}
+                    value={utrNumber}
+                    onChange={(e) => setUtrNumber(e.target.value)}
+                    placeholder="e.g. 328409182391"
+                    className="w-full border border-slate-300 rounded-xl p-3 text-xs outline-none focus:border-glow-600 font-mono tracking-wider"
+                  />
+                  <p className="text-[10px] text-slate-400">
+                    Find the 12-digit UTR/UPI Ref No in your GPay / PhonePe payment receipt.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleUpiPayment}
+                  disabled={processingPayment || !selectedAddress || !utrNumber}
+                  className="w-full bg-gradient-to-r from-glow-600 to-rose-600 hover:from-glow-700 hover:to-rose-700 text-white font-bold text-sm py-4 rounded-2xl shadow-glow transition-all duration-200 flex items-center justify-center gap-2 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Lock className="w-4 h-4" />
+                  <span>{processingPayment ? 'Confirming Order...' : `VERIFY & SUBMIT UPI ORDER (₹${grandTotal})`}</span>
+                </button>
+              </div>
+            )}
+
+            {/* TAB 2: RAZORPAY GATEWAY OPTION */}
+            {paymentMethodType === 'RAZORPAY' && (
+              <div className="space-y-4 pt-1">
+                <div className="bg-rose-50/70 p-4 rounded-xl border border-rose-200 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-glow-600 text-white flex items-center justify-center font-bold shrink-0">
+                    <CreditCard className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="block text-xs font-bold text-slate-900">Razorpay Test Gateway</span>
+                    <span className="text-[11px] text-slate-500">Supports Cards, Netbanking & Online UPI</span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handlePayment}
+                  disabled={processingPayment || !selectedAddress}
+                  className="w-full bg-gradient-to-r from-glow-600 to-rose-600 hover:from-glow-700 hover:to-rose-700 text-white font-bold text-sm py-4 rounded-2xl shadow-glow transition-all duration-200 flex items-center justify-center gap-2 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Lock className="w-4 h-4" />
+                  <span>{processingPayment ? 'Processing Gateway...' : `PAY ₹${grandTotal} VIA RAZORPAY`}</span>
+                </button>
+              </div>
+            )}
+
+            {/* Order Price Summary */}
+            <div className="space-y-2.5 text-xs text-slate-600 pt-3 border-t border-slate-100">
               <div className="flex justify-between">
                 <span>Subtotal</span>
                 <span className="font-semibold text-slate-900">₹{cartSubtotal}</span>
@@ -334,17 +530,8 @@ const Checkout = () => {
               <span className="text-xl font-bold text-glow-600">₹{grandTotal}</span>
             </div>
 
-            <button
-              onClick={handlePayment}
-              disabled={processingPayment || !selectedAddress}
-              className="w-full bg-gradient-to-r from-glow-600 to-rose-600 hover:from-glow-700 hover:to-rose-700 text-white font-bold text-sm py-4 rounded-2xl shadow-glow transition-all duration-200 flex items-center justify-center gap-2 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Lock className="w-4 h-4" />
-              <span>{processingPayment ? 'Processing Gateway...' : `PAY ₹${grandTotal} NOW`}</span>
-            </button>
-
             <p className="text-[11px] text-slate-400 text-center flex items-center justify-center gap-1">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> 256-Bit SSL Encrypted Razorpay Test Gateway
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> 256-Bit SSL Encrypted Secure Checkout
             </p>
           </div>
         </div>

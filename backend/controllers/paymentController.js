@@ -264,7 +264,80 @@ const verifyRazorpayPayment = async (req, res) => {
   }
 };
 
+// @desc    Create Direct UPI QR Scanner Order
+// @route   POST /api/payment/create-upi-order
+const createUpiOrder = async (req, res) => {
+  try {
+    const { items, couponCode, shippingAddress, utrNumber, subtotal, discount, deliveryCharge, grandTotal } = req.body;
+
+    if (!utrNumber || utrNumber.trim().length < 6) {
+      return res.status(400).json({ success: false, message: 'Please enter a valid 12-digit UTR/Transaction Reference Number' });
+    }
+
+    const orderItems = [];
+    for (const item of items) {
+      const product = await Product.findById(item.product._id || item.product || item.productId);
+      if (product) {
+        product.stock = Math.max(0, product.stock - item.quantity);
+        await product.save();
+
+        orderItems.push({
+          product: product._id,
+          name: product.name,
+          image: product.images[0] || '',
+          price: item.price || product.price,
+          quantity: item.quantity
+        });
+      }
+    }
+
+    if (couponCode) {
+      await Coupon.findOneAndUpdate(
+        { code: couponCode.trim().toUpperCase() },
+        { $inc: { timesUsed: 1 } }
+      );
+    }
+
+    const uniqueOrderId = `DMG-UPI-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 900 + 100)}`;
+
+    const order = await Order.create({
+      orderId: uniqueOrderId,
+      user: req.user._id,
+      items: orderItems,
+      shippingAddress,
+      paymentMethod: 'UPI QR Scanner',
+      paymentDetails: {
+        razorpayOrderId: 'UPI_QR_SCANNER',
+        razorpayPaymentId: utrNumber.trim(),
+        status: 'Completed'
+      },
+      subtotal,
+      discount: discount || 0,
+      deliveryCharge: deliveryCharge || 0,
+      grandTotal,
+      couponCode: couponCode || '',
+      orderStatus: 'Confirmed',
+      statusTimeline: [
+        { status: 'Pending', message: 'UPI Order submitted by user' },
+        { status: 'Confirmed', message: `UPI Payment recorded with UTR: ${utrNumber.trim()}` }
+      ]
+    });
+
+    await Cart.findOneAndUpdate({ user: req.user._id }, { items: [] });
+
+    res.status(201).json({
+      success: true,
+      data: order,
+      message: 'UPI Payment submitted and order created successfully!'
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   createRazorpayOrder,
-  verifyRazorpayPayment
+  verifyRazorpayPayment,
+  createUpiOrder
 };
+

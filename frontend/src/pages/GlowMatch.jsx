@@ -198,7 +198,7 @@ const GlowMatch = () => {
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-glow-600 mx-auto"></div>
             </div>
-          ) : (
+          ) : recommendations && recommendations.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {recommendations.map((item, i) => (
                 <div key={i} className="relative">
@@ -211,6 +211,16 @@ const GlowMatch = () => {
                   </div>
                 </div>
               ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-rose-50/50 rounded-3xl border border-rose-100 space-y-4">
+              <p className="text-sm font-semibold text-slate-700">Explore our full beauty & lifestyle catalog for more options!</p>
+              <button
+                onClick={handleReset}
+                className="bg-glow-600 text-white text-xs font-bold px-6 py-3 rounded-xl shadow-glow"
+              >
+                Retake Survey Now
+              </button>
             </div>
           )}
         </div>

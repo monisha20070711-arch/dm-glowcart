@@ -56,12 +56,12 @@ const autoSeedIfEmpty = async () => {
       ]);
     }
 
-    // Ensure all 50+ products (including 5 budget items under ₹20) are upserted in MongoDB
+    // Ensure all products (including 5 budget items under ₹20) are force-upserted in MongoDB
     if (productsData && productsData.length > 0) {
       for (const item of productsData) {
         await Product.findOneAndUpdate(
           { SKU: item.SKU },
-          { $setOnInsert: item },
+          { $set: item },
           { upsert: true, new: true }
         );
       }

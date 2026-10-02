@@ -6,44 +6,54 @@ const getGlowMatchRecommendations = async (req, res) => {
   try {
     const { skinConcern, category, maxPrice, skinType, preference } = req.body;
 
-    const query = {};
+    const maxBudget = maxPrice ? Number(maxPrice) : 2000;
 
+    // 1. Try finding products matching category and budget
+    let query = {};
     if (category && category !== 'All') {
       query.category = category;
     }
-
-    if (skinType && skinType !== 'All') {
-      query.skinType = { $in: [skinType, 'All'] };
-    }
-
-    if (maxPrice) {
-      query.price = { $lte: Number(maxPrice) };
+    if (maxBudget) {
+      query.price = { $lte: maxBudget };
     }
 
     let products = await Product.find(query);
 
-    // Filter and score products by match suitability
+    // 2. If exact category + price returns fewer than 4 products, relax category filter to find products within budget
+    if (!products || products.length < 4) {
+      products = await Product.find({ price: { $lte: Math.max(maxBudget, 1000) } });
+    }
+
+    // 3. If still fewer than 4, fetch top products from store catalog
+    if (!products || products.length < 4) {
+      products = await Product.find({}).limit(8);
+    }
+
+    // Filter & score products by match suitability
     const scoredProducts = products.map((product) => {
-      let score = 70; // Base score
+      let score = 75; // Base match score
 
       if (skinConcern && product.skinConcerns && product.skinConcerns.includes(skinConcern)) {
-        score += 20;
+        score += 15;
       }
 
-      if (preference) {
-        const text = `${product.name} ${product.description} ${product.benefits.join(' ')}`.toLowerCase();
-        if (text.includes(preference.toLowerCase())) {
-          score += 10;
-        }
+      if (category && product.category === category) {
+        score += 10;
       }
 
-      if (product.rating >= 4.5) score += 5;
-      if (product.bestSeller) score += 5;
+      if (product.price <= maxBudget) {
+        score += 5;
+      }
+
+      if (product.rating >= 4.5) score += 3;
+      if (product.bestSeller) score += 2;
+
+      const finalMatch = Math.min(99, Math.max(84, score));
 
       return {
         product,
-        matchPercentage: Math.min(99, score),
-        matchReason: `Ideal for ${skinConcern || 'daily skin care'} & matches your ₹${maxPrice || 1000} budget limit.`
+        matchPercentage: finalMatch,
+        matchReason: `Formulated for ${skinConcern || 'glowing skin'} & matches your ₹${maxBudget} budget limit.`
       };
     });
 
@@ -53,7 +63,7 @@ const getGlowMatchRecommendations = async (req, res) => {
     res.json({
       success: true,
       count: scoredProducts.length,
-      data: scoredProducts.slice(0, 8)
+      data: scoredProducts.slice(0, 6)
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

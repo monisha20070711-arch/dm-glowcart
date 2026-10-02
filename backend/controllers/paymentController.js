@@ -333,11 +333,78 @@ const createUpiOrder = async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
+// @desc    Create Cash on Delivery Order
+// @route   POST /api/payment/create-cod-order
+const createCodOrder = async (req, res) => {
+  try {
+    const { items, couponCode, shippingAddress, subtotal, discount, deliveryCharge, grandTotal } = req.body;
+
+    const orderItems = [];
+    for (const item of items) {
+      const product = await Product.findById(item.product._id || item.product || item.productId);
+      if (product) {
+        product.stock = Math.max(0, product.stock - item.quantity);
+        await product.save();
+
+        orderItems.push({
+          product: product._id,
+          name: product.name,
+          image: product.images[0] || '',
+          price: item.price || product.price,
+          quantity: item.quantity
+        });
+      }
+    }
+
+    if (couponCode) {
+      await Coupon.findOneAndUpdate(
+        { code: couponCode.trim().toUpperCase() },
+        { $inc: { timesUsed: 1 } }
+      );
+    }
+
+    const uniqueOrderId = `DMG-COD-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 900 + 100)}`;
+
+    const order = await Order.create({
+      orderId: uniqueOrderId,
+      user: req.user._id,
+      items: orderItems,
+      shippingAddress,
+      paymentMethod: 'Cash on Delivery (COD)',
+      paymentDetails: {
+        razorpayOrderId: 'COD_ORDER',
+        razorpayPaymentId: 'COD_PAYMENT_ON_DELIVERY',
+        status: 'Pending'
+      },
+      subtotal,
+      discount: discount || 0,
+      deliveryCharge: deliveryCharge || 0,
+      grandTotal,
+      couponCode: couponCode || '',
+      orderStatus: 'Confirmed',
+      statusTimeline: [
+        { status: 'Pending', message: 'COD Order placed' },
+        { status: 'Confirmed', message: 'Order confirmed for Cash on Delivery' }
+      ]
+    });
+
+    await Cart.findOneAndUpdate({ user: req.user._id }, { items: [] });
+
+    res.status(201).json({
+      success: true,
+      data: order,
+      message: 'Cash on delivery order placed successfully!'
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 };
 
 module.exports = {
   createRazorpayOrder,
   verifyRazorpayPayment,
-  createUpiOrder
+  createUpiOrder,
+  createCodOrder
 };
+
 

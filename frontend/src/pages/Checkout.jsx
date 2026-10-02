@@ -250,6 +250,39 @@ const Checkout = () => {
     }
   };
 
+  const handleCodPayment = async () => {
+    if (!selectedAddress) {
+      showToast('Please select or add a delivery address', 'error');
+      return;
+    }
+
+    try {
+      setProcessingPayment(true);
+      const res = await API.post('/payment/create-cod-order', {
+        items,
+        couponCode: appliedCoupon ? appliedCoupon.code : '',
+        shippingAddress: selectedAddress,
+        subtotal: cartSubtotal,
+        discount: discountAmount,
+        deliveryCharge,
+        grandTotal
+      });
+
+      if (res.data.success) {
+        clearCart();
+        showToast('Cash on Delivery Order placed successfully!', 'success');
+        navigate('/order-success', { state: { order: res.data.data } });
+      } else {
+        showToast(res.data.message || 'Failed to place COD order', 'error');
+      }
+    } catch (err) {
+      console.error('COD Order Error:', err);
+      showToast(err.response?.data?.message || 'COD Order submission failed', 'error');
+    } finally {
+      setProcessingPayment(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -356,31 +389,44 @@ const Checkout = () => {
             </h3>
 
             {/* Payment Method Selector Tabs */}
-            <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
+            <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 rounded-xl text-center">
               <button
                 type="button"
                 onClick={() => setPaymentMethodType('UPI_QR')}
-                className={`py-2 px-3 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                className={`py-2 px-1.5 text-[11px] font-bold rounded-lg transition-all flex flex-col sm:flex-row items-center justify-center gap-1 ${
                   paymentMethodType === 'UPI_QR'
                     ? 'bg-white text-glow-600 shadow-sm'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 <QrCode className="w-4 h-4 text-glow-600" />
-                <span>UPI QR Scanner</span>
+                <span>UPI QR</span>
               </button>
 
               <button
                 type="button"
-                onClick={() => setPaymentMethodType('RAZORPAY')}
-                className={`py-2 px-3 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
-                  paymentMethodType === 'RAZORPAY'
+                onClick={() => setPaymentMethodType('NET_BANKING')}
+                className={`py-2 px-1.5 text-[11px] font-bold rounded-lg transition-all flex flex-col sm:flex-row items-center justify-center gap-1 ${
+                  paymentMethodType === 'NET_BANKING'
                     ? 'bg-white text-glow-600 shadow-sm'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 <CreditCard className="w-4 h-4 text-glow-600" />
-                <span>Razorpay Gateway</span>
+                <span>Net Banking</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPaymentMethodType('COD')}
+                className={`py-2 px-1.5 text-[11px] font-bold rounded-lg transition-all flex flex-col sm:flex-row items-center justify-center gap-1 ${
+                  paymentMethodType === 'COD'
+                    ? 'bg-white text-glow-600 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                <span>COD</span>
               </button>
             </div>
 
@@ -483,16 +529,31 @@ const Checkout = () => {
               </div>
             )}
 
-            {/* TAB 2: RAZORPAY GATEWAY OPTION */}
-            {paymentMethodType === 'RAZORPAY' && (
+            {/* TAB 2: NET BANKING & CARDS OPTION */}
+            {(paymentMethodType === 'NET_BANKING' || paymentMethodType === 'RAZORPAY') && (
               <div className="space-y-4 pt-1">
-                <div className="bg-rose-50/70 p-4 rounded-xl border border-rose-200 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-glow-600 text-white flex items-center justify-center font-bold shrink-0">
-                    <CreditCard className="w-5 h-5" />
+                <div className="bg-rose-50/70 p-4 rounded-xl border border-rose-200 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-glow-600 text-white flex items-center justify-center font-bold shrink-0">
+                      <CreditCard className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <span className="block text-xs font-bold text-slate-900">Net Banking & Cards Gateway</span>
+                      <span className="text-[11px] text-slate-500">Instant Net Banking, Debit/Credit Cards & Wallets</span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="block text-xs font-bold text-slate-900">Razorpay Test Gateway</span>
-                    <span className="text-[11px] text-slate-500">Supports Cards, Netbanking & Online UPI</span>
+
+                  {/* Bank Badges */}
+                  <div className="pt-2 border-t border-rose-200/60">
+                    <span className="text-[10px] font-bold uppercase text-slate-500 block mb-1.5">Supported Indian Banks:</span>
+                    <div className="flex flex-wrap gap-1.5 text-[10px] font-bold">
+                      <span className="bg-blue-600 text-white px-2 py-0.5 rounded">SBI</span>
+                      <span className="bg-red-700 text-white px-2 py-0.5 rounded">HDFC</span>
+                      <span className="bg-orange-600 text-white px-2 py-0.5 rounded">ICICI</span>
+                      <span className="bg-purple-700 text-white px-2 py-0.5 rounded">AXIS</span>
+                      <span className="bg-red-600 text-white px-2 py-0.5 rounded">KOTAK</span>
+                      <span className="bg-yellow-600 text-white px-2 py-0.5 rounded">PNB</span>
+                    </div>
                   </div>
                 </div>
 
@@ -503,7 +564,32 @@ const Checkout = () => {
                   className="w-full bg-gradient-to-r from-glow-600 to-rose-600 hover:from-glow-700 hover:to-rose-700 text-white font-bold text-sm py-4 rounded-2xl shadow-glow transition-all duration-200 flex items-center justify-center gap-2 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Lock className="w-4 h-4" />
-                  <span>{processingPayment ? 'Processing Gateway...' : `PAY ₹${grandTotal} VIA RAZORPAY`}</span>
+                  <span>{processingPayment ? 'Processing Gateway...' : `PAY ₹${grandTotal} VIA NET BANKING / CARDS`}</span>
+                </button>
+              </div>
+            )}
+
+            {/* TAB 3: CASH ON DELIVERY OPTION */}
+            {paymentMethodType === 'COD' && (
+              <div className="space-y-4 pt-1">
+                <div className="bg-emerald-50/70 p-4 rounded-xl border border-emerald-200 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shrink-0">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="block text-xs font-bold text-slate-900">Cash on Delivery (COD)</span>
+                    <span className="text-[11px] text-slate-500">Pay cash directly when order reaches your doorstep</span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleCodPayment}
+                  disabled={processingPayment || !selectedAddress}
+                  className="w-full bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-bold text-sm py-4 rounded-2xl shadow-lg transition-all duration-200 flex items-center justify-center gap-2 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>{processingPayment ? 'Placing Order...' : `PLACE COD ORDER (₹${grandTotal})`}</span>
                 </button>
               </div>
             )}

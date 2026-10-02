@@ -254,6 +254,28 @@ const productsData = [
     skinType: 'Oily'
   },
   {
+    name: 'Lip & Cheek Tint - Velvet Berry',
+    brand: 'DM-GLOWCART Beauty',
+    category: 'Beauty & Personal Care',
+    subcategory: 'Makeup',
+    description: 'Dual-purpose weightless liquid tint for a natural flushed lip and cheek stain.',
+    price: 449,
+    originalPrice: 599,
+    stock: 35,
+    SKU: 'DMG-BTY-005B',
+    images: ['https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=800'],
+    rating: 4.8,
+    reviewCount: 124,
+    benefits: ['Dual use for lips and cheeks', '12h smudge-free stain', 'Hydrating hyaluronic core'],
+    ingredients: 'Hyaluronic Acid, Vitamin E, Beetroot Extract, Aqua.',
+    howToUse: 'Dot 2 drops on cheeks and lips. Blend quickly with fingertips.',
+    featured: true,
+    bestSeller: true,
+    newArrival: true,
+    skinConcerns: ['Dullness', 'Dryness'],
+    skinType: 'All'
+  },
+  {
     name: 'Rosy Glow Blush',
     brand: 'DM-GLOWCART Beauty',
     category: 'Beauty & Personal Care',

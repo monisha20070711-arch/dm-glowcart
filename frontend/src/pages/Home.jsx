@@ -10,21 +10,24 @@ const Home = () => {
   const [trendingProducts, setTrendingProducts] = useState([]);
   const [bestsellers, setBestsellers] = useState([]);
   const [newArrivals, setNewArrivals] = useState([]);
+  const [budgetProducts, setBudgetProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchHomeData = async () => {
       try {
         setLoading(true);
-        const [trendingRes, bestRes, newRes] = await Promise.all([
+        const [trendingRes, bestRes, newRes, budgetRes] = await Promise.all([
           API.get('/products?featured=true&limit=8'),
           API.get('/products?bestSeller=true&limit=8'),
-          API.get('/products?newArrival=true&limit=8')
+          API.get('/products?newArrival=true&limit=8'),
+          API.get('/products?maxPrice=20&limit=8')
         ]);
 
         if (trendingRes.data.success) setTrendingProducts(trendingRes.data.data);
         if (bestRes.data.success) setBestsellers(bestRes.data.data);
         if (newRes.data.success) setNewArrivals(newRes.data.data);
+        if (budgetRes.data.success) setBudgetProducts(budgetRes.data.data);
       } catch (error) {
         console.error('Home data load error:', error);
       } finally {
@@ -177,6 +180,37 @@ const Home = () => {
           ))}
         </div>
       </section>
+
+      {/* Under ₹20 Budget Deals Section */}
+      {budgetProducts && budgetProducts.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-gradient-to-r from-rose-600 via-pink-600 to-rose-700 rounded-3xl p-6 sm:p-8 text-white shadow-xl space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/20 pb-4">
+              <div>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400 text-slate-950 text-xs font-bold uppercase tracking-wider shadow-sm">
+                  🔥 Mega Budget Offer • Under ₹20
+                </span>
+                <h2 className="text-2xl sm:text-3xl font-serif font-bold text-white mt-2">
+                  Pocket-Friendly Beauty Deals
+                </h2>
+              </div>
+              <Link
+                to="/shop?maxPrice=20"
+                className="bg-white text-rose-700 hover:bg-rose-50 font-bold text-xs px-5 py-3 rounded-xl shadow-md transition-all flex items-center gap-1.5 shrink-0"
+              >
+                <span>View All Under ₹20</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              {budgetProducts.map((product) => (
+                <ProductCard key={product._id} product={product} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Trending Featured Products */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

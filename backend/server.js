@@ -8,6 +8,7 @@ const User = require('./models/User');
 const Product = require('./models/Product');
 const Category = require('./models/Category');
 const Coupon = require('./models/Coupon');
+const { productsData } = require('./seed');
 
 // Load environment variables
 dotenv.config();
@@ -53,97 +54,20 @@ const autoSeedIfEmpty = async () => {
         { name: 'Accessories', slug: 'accessories', description: 'Bags & jewelry', image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800' },
         { name: 'Home & Lifestyle', slug: 'home-lifestyle', description: 'Candles & decor', image: 'https://images.unsplash.com/photo-1603006905003-be475563bc59?w=800' }
       ]);
-
-      // Create Initial Products
-      await Product.insertMany([
-        {
-          name: 'Glow Perfect Primer',
-          brand: 'DM-GLOWCART Beauty',
-          category: 'Beauty & Personal Care',
-          subcategory: 'Makeup',
-          description: 'Silky smooth pore-blurring face primer.',
-          price: 599,
-          originalPrice: 799,
-          stock: 25,
-          SKU: 'DMG-BTY-001',
-          images: ['https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=800'],
-          rating: 4.8,
-          reviewCount: 142,
-          benefits: ['Blurs pores instantly'],
-          featured: true,
-          bestSeller: true
-        },
-        {
-          name: 'Flawless Finish Foundation',
-          brand: 'DM-GLOWCART Beauty',
-          category: 'Beauty & Personal Care',
-          subcategory: 'Makeup',
-          description: 'Medium-to-full coverage liquid foundation SPF 20.',
-          price: 899,
-          originalPrice: 1199,
-          stock: 30,
-          SKU: 'DMG-BTY-002',
-          images: ['https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800'],
-          rating: 4.7,
-          reviewCount: 98,
-          benefits: ['Natural satin finish'],
-          featured: true,
-          bestSeller: true
-        },
-        {
-          name: 'HD Concealer',
-          brand: 'DM-GLOWCART Beauty',
-          category: 'Beauty & Personal Care',
-          subcategory: 'Makeup',
-          description: 'High-definition liquid concealer.',
-          price: 499,
-          originalPrice: 649,
-          stock: 18,
-          SKU: 'DMG-BTY-003',
-          images: ['https://images.unsplash.com/photo-1631729371254-42c2892f0e6e?w=800'],
-          rating: 4.6,
-          reviewCount: 85,
-          benefits: ['Crease-proof'],
-          bestSeller: true
-        },
-        {
-          name: 'Velvet Matte Lipstick',
-          brand: 'DM-GLOWCART Beauty',
-          category: 'Beauty & Personal Care',
-          subcategory: 'Makeup',
-          description: 'Plush velvet matte bullet lipstick.',
-          price: 499,
-          originalPrice: 649,
-          stock: 28,
-          SKU: 'DMG-BTY-011',
-          images: ['https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=800'],
-          rating: 4.9,
-          reviewCount: 188,
-          benefits: ['Shea Butter enriched'],
-          featured: true,
-          bestSeller: true
-        },
-        {
-          name: 'Floral Print Cotton Anarkali Kurta',
-          brand: 'GLOW FASHION',
-          category: 'Fashion',
-          subcategory: 'Ethnic Wear',
-          description: 'Breathable cotton Anarkali kurta.',
-          price: 1299,
-          originalPrice: 1999,
-          stock: 15,
-          SKU: 'DMG-FSH-024',
-          images: ['https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800'],
-          rating: 4.8,
-          reviewCount: 88,
-          benefits: ['100% Pure Cotton'],
-          featured: true,
-          bestSeller: true
-        }
-      ]);
-
-      console.log('Auto-seeding completed successfully! Admin & Demo Users created.');
     }
+
+    // Ensure all 50+ products (including 5 budget items under ₹20) are upserted in MongoDB
+    if (productsData && productsData.length > 0) {
+      for (const item of productsData) {
+        await Product.findOneAndUpdate(
+          { SKU: item.SKU },
+          { $setOnInsert: item },
+          { upsert: true, new: true }
+        );
+      }
+    }
+
+    console.log('Auto-seed check completed! All products & budget items verified.');
   } catch (err) {
     console.error('Auto-seed check error:', err.message);
   }

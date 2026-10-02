@@ -37,14 +37,17 @@ const getProducts = async (req, res) => {
       queryObj.stock = { $gt: 0 };
     }
 
-    // Price Range Filter
+    // Price Range Filter (Safeguarded against minPrice > maxPrice conflicts)
     if (req.query.minPrice || req.query.maxPrice) {
+      const minP = req.query.minPrice && !isNaN(req.query.minPrice) ? Number(req.query.minPrice) : null;
+      const maxP = req.query.maxPrice && !isNaN(req.query.maxPrice) ? Number(req.query.maxPrice) : null;
+
       queryObj.price = {};
-      if (req.query.minPrice && !isNaN(req.query.minPrice)) {
-        queryObj.price.$gte = Number(req.query.minPrice);
+      if (minP !== null && (maxP === null || minP <= maxP)) {
+        queryObj.price.$gte = minP;
       }
-      if (req.query.maxPrice && !isNaN(req.query.maxPrice)) {
-        queryObj.price.$lte = Number(req.query.maxPrice);
+      if (maxP !== null) {
+        queryObj.price.$lte = maxP;
       }
     }
 

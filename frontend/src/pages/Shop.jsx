@@ -72,8 +72,18 @@ const Shop = () => {
     if (search) params.search = search;
     if (category) params.category = category;
     if (brand) params.brand = brand;
-    if (minPrice) params.minPrice = minPrice;
-    if (maxPrice) params.maxPrice = maxPrice;
+
+    let minP = minPrice ? Number(minPrice) : null;
+    let maxP = maxPrice ? Number(maxPrice) : null;
+
+    if (minP !== null && maxP !== null && minP > maxP) {
+      minP = null;
+      setMinPrice('');
+    }
+
+    if (minP !== null) params.minPrice = minP;
+    if (maxP !== null) params.maxPrice = maxP;
+
     if (sort) params.sort = sort;
     if (inStock) params.inStock = 'true';
     params.page = 1;
@@ -103,6 +113,33 @@ const Shop = () => {
           <p className="text-xs text-slate-500 mt-1">
             Showing <strong className="text-slate-800">{totalCount}</strong> items available in DM-GLOWCART store
           </p>
+
+          {/* Quick Budget Deal Pills */}
+          <div className="flex items-center gap-2 overflow-x-auto pt-3">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider shrink-0">Quick Deals:</span>
+            <button
+              onClick={() => { setMinPrice(''); setMaxPrice('20'); setSearchParams({ maxPrice: '20' }); }}
+              className={`px-3 py-1 rounded-full text-xs font-bold shrink-0 transition-all ${
+                maxPrice === '20' ? 'bg-glow-600 text-white shadow-sm' : 'bg-rose-100 text-glow-700 hover:bg-rose-200'
+              }`}
+            >
+              ⚡ Under ₹20 Deals
+            </button>
+            <button
+              onClick={() => { setMinPrice(''); setMaxPrice('500'); setSearchParams({ maxPrice: '500' }); }}
+              className={`px-3 py-1 rounded-full text-xs font-bold shrink-0 transition-all ${
+                maxPrice === '500' ? 'bg-glow-600 text-white shadow-sm' : 'bg-rose-50 text-slate-700 hover:bg-rose-100'
+              }`}
+            >
+              💎 Under ₹500
+            </button>
+            <button
+              onClick={resetFilters}
+              className="px-3 py-1 rounded-full text-xs font-bold shrink-0 bg-slate-100 text-slate-600 hover:bg-slate-200"
+            >
+              All Items
+            </button>
+          </div>
         </div>
 
         {/* Top Controls: Mobile Filter Button & Sorting */}

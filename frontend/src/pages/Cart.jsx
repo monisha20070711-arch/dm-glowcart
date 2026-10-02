@@ -6,6 +6,7 @@ import { useWishlist } from '../context/WishlistContext';
 import { useToast } from '../context/ToastContext';
 import API from '../services/api';
 import EmptyState from '../components/EmptyState';
+import ImageWithFallback from '../components/ImageWithFallback';
 
 const Cart = () => {
   const { cart, loading, updateQuantity, removeFromCart, cartSubtotal } = useCart();
@@ -103,7 +104,7 @@ const Cart = () => {
                 className="bg-white rounded-2xl border border-rose-100 p-4 sm:p-6 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4"
               >
                 <div className="flex items-center gap-4 w-full sm:w-auto">
-                  <img
+                  <ImageWithFallback
                     src={product.images && product.images[0]}
                     alt={product.name}
                     className="w-20 h-20 object-cover rounded-xl border border-slate-100 shrink-0"

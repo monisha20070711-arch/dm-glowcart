@@ -4,6 +4,7 @@ import { Sparkles, ArrowRight, ShieldCheck, Truck, RefreshCw, Headphones, Tag, S
 import API from '../services/api';
 import ProductCard from '../components/ProductCard';
 import SkeletonCard from '../components/SkeletonCard';
+import ImageWithFallback from '../components/ImageWithFallback';
 
 const Home = () => {
   const [trendingProducts, setTrendingProducts] = useState([]);
@@ -98,7 +99,7 @@ const Home = () => {
             <div className="relative w-full max-w-sm">
               <div className="absolute -inset-4 bg-gradient-to-r from-rose-500 to-amber-500 rounded-3xl blur-2xl opacity-40 animate-pulse"></div>
               <div className="relative bg-white/10 backdrop-blur-xl border border-white/20 p-4 rounded-3xl shadow-2xl">
-                <img
+                <ImageWithFallback
                   src="https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=800"
                   alt="DM-GLOWCART Beauty Collection"
                   className="w-full h-80 object-cover rounded-2xl shadow-md"
@@ -162,7 +163,7 @@ const Home = () => {
               to={`/shop?category=${encodeURIComponent(cat.query)}`}
               className="group relative rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 h-64 border border-rose-100 flex flex-col justify-end"
             >
-              <img
+              <ImageWithFallback
                 src={cat.img}
                 alt={cat.name}
                 className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
@@ -224,8 +225,8 @@ const Home = () => {
               <span>START GLOW MATCH FINDER</span>
             </Link>
           </div>
-          <div className="w-48 h-48 rounded-full bg-white p-3 shadow-xl border border-rose-200 shrink-0 flex items-center justify-center">
-            <img
+          <div className="w-48 h-48 rounded-full bg-white p-3 shadow-xl border border-rose-200 shrink-0 flex items-center justify-center overflow-hidden">
+            <ImageWithFallback
               src="https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=800"
               alt="Glow Match AI"
               className="w-full h-full object-cover rounded-full"

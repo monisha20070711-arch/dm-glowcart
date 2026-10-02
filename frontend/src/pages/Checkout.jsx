@@ -5,6 +5,7 @@ import API from '../services/api';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import ImageWithFallback from '../components/ImageWithFallback';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -329,7 +330,11 @@ const Checkout = () => {
                 return (
                   <div key={p._id} className="py-3 flex items-center justify-between text-xs">
                     <div className="flex items-center gap-3">
-                      <img src={p.images && p.images[0]} alt={p.name} className="w-12 h-12 object-cover rounded-lg" />
+                      <ImageWithFallback
+                        src={p.images && p.images[0]}
+                        alt={p.name}
+                        className="w-12 h-12 object-cover rounded-lg shrink-0"
+                      />
                       <div>
                         <span className="font-semibold text-slate-800 block">{p.name}</span>
                         <span className="text-slate-400 text-[11px]">Qty: {item.quantity} × ₹{p.price}</span>
